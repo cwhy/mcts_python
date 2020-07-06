@@ -31,10 +31,28 @@ def get_available_actions(s: State):
 win_patterns = get_win_patterns(h)
 
 
-def model(s: State, a: Action, player: int):
+def rewards_winner_take_all(num: float, player: int):
+    rewards = [-num] * 2
+    rewards[player] += num * 2
+    return tuple(rewards)
+
+
+def rewards_individual(num: float, player: int):
+    rewards = [0] * 2
+    rewards[player] += num
+    return tuple(rewards)
+
+
+def rewards_all(num: float):
+    rewards = [num] * 2
+    return tuple(rewards)
+
+
+def model(s: State, a: Action, player: int, render: bool = False):
+    s = np.copy(s)
     if s[a] != -1:
         reward_type = 'bad_position'
-        reward = -20
+        rewards = rewards_individual(-20, player)
         done = True
     else:
         s[a] = player
@@ -42,21 +60,24 @@ def model(s: State, a: Action, player: int):
         for pattern in win_patterns:
             if all(p_pos & pattern == pattern):
                 reward_type = 'win'
-                reward = 20
+                rewards = rewards_winner_take_all(20, player)
                 done = True
                 break
         else:
             if not any(s == -1):
                 reward_type = 'draw'
-                reward = 10
+                rewards = rewards_all(10)
                 done = True
             else:
                 reward_type = 'still_in_game'
-                reward = 0
+                rewards = tuple(0 for _ in range(n_players))
                 done = False
     next_player = (player + 1) % n_players
-    message = f"{player_symbols[player]} {reward_type} with reward {reward}"
-    return s, reward, done, next_player, message
+    message = f"{player_symbols[player]} {reward_type} " \
+              f"with reward {rewards[player]}"
+    if render:
+        render_(s)
+    return s, rewards, done, next_player, message
 
 
 def render_(s):
@@ -67,7 +88,7 @@ def render_(s):
         else:
             new_state_vector.append(player_symbols[value])
 
-    for i in range(0, h**2, h):
+    for i in range(0, h ** 2, h):
         print_grid_line_(new_state_vector, i)
 
     print(" " + "-" * (h * 4 + 1))
