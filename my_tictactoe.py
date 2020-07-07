@@ -52,7 +52,7 @@ def model(s: State, a: Action, player: int, render: bool = False):
     s = np.copy(s)
     if s[a] != -1:
         reward_type = 'bad_position'
-        rewards = rewards_individual(-20, player)
+        rewards = rewards_individual(-10, player)
         done = True
     else:
         s[a] = player
@@ -60,13 +60,13 @@ def model(s: State, a: Action, player: int, render: bool = False):
         for pattern in win_patterns:
             if all(p_pos & pattern == pattern):
                 reward_type = 'win'
-                rewards = rewards_winner_take_all(20, player)
+                rewards = rewards_winner_take_all(1, player)
                 done = True
                 break
         else:
             if not any(s == -1):
                 reward_type = 'draw'
-                rewards = rewards_all(10)
+                rewards = rewards_all(0)
                 done = True
             else:
                 reward_type = 'still_in_game'

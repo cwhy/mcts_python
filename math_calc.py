@@ -6,7 +6,7 @@ def ucb(q: float, c_puct: float, p: float, n: float, na: float, temperature=1):
 
 
 def ucb_all(qs: np.array,
-            c_puct: float,
+            c_puct_normed_by_sum: float,
             ps: np.array,
             nas: np.array):
-    return qs + c_puct * ps * np.sqrt(nas.sum()) / (1 + nas)
+    return qs + c_puct_normed_by_sum * ps / (1 + nas)
