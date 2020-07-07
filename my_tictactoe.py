@@ -98,8 +98,24 @@ def render_(s):
 def print_grid_line_(grid, offset=0):
     print(" " + "-" * (h * 4 + 1))
     for i in range(h):
-        if grid[i + offset] == 0:
-            print(" | " + " ", end='')
-        else:
-            print(" | " + str(grid[i + offset]), end='')
+        # if grid[i + offset] == 0:
+        #     print(" | " + " ", end='')
+        # else:
+        print(" | " + str(grid[i + offset]), end='')
     print(" |")
+
+
+class CliAgent:
+    def __init__(self, agent_id: int, _, __):
+        self.ag_id = agent_id
+
+    def find_action(self, s, render=False):
+        print("Current Game State:")
+        render_(s)
+        print("Position numbers:")
+        for i in range(0, h ** 2, h):
+            print_grid_line_(np.arange(0, h**2), i)
+
+        print(" " + "-" * (h * 4 + 1))
+        i = int(input("Enter your next move as position number:"))
+        return i

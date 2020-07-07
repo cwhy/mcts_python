@@ -1,11 +1,7 @@
 from collections import defaultdict
-import itertools
-from typing import Dict, List
-
+from typing import Dict
 import numpy as np
-
 from math_calc import ucb_all
-from my_tictactoe import render_
 
 Action = int
 State = np.ndarray
@@ -52,7 +48,6 @@ class MctsAgent:
             next_s, rewards, done, next_id, message = self.model(s, action, self.ag_id)
             if done:
                 return rewards[self.ag_id]
-            # print(next_id, next_agent.ag_id)
             assert next_id == self.next_agent.ag_id
             v_next = self.next_agent.search(next_s)
             v = self.combined_rewards(rewards[self.ag_id], v_next)  # TODO  Figure out how to forward multiagent rewards
@@ -79,3 +74,8 @@ class MctsAgent:
             return policy_count
         else:
             return policy_count/policy_count.sum()
+
+    def find_action(self, s: State, render=False):
+        policy = self.find_policy(s, render=render)
+        action = np.random.choice(len(policy), p=policy)
+        return action
