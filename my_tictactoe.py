@@ -106,7 +106,7 @@ def print_grid_line_(grid, offset=0):
 
 
 class CliAgent:
-    def __init__(self, agent_id: int, _, __):
+    def __init__(self, agent_id: int):
         self.ag_id = agent_id
 
     def find_action(self, s, render=False):
