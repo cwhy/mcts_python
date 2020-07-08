@@ -31,16 +31,19 @@ class MctsAgent:
     def selection(self, s_id):
         s = self.states_[s_id]
         avail_a = self.get_actions(s)
-        ucbs = ucb_all(qs=self.qs[s_id],
-                       c_puct_normed_by_sum=c_puct * np.sqrt(
-                           self.visits[s_id][avail_a].sum()),
-                       ps=self.memory_.get_p(s_id),
-                       nas=self.visits[s_id])
-        # print(self.visits[s_id])
-        # print(self.qs[s_id])
-        # print(ucbs)
-        # print("--")
-        return avail_a[np.argmax(ucbs[avail_a])]
+        if len(avail_a) == 1:
+            return avail_a[0]
+        else:
+            ucbs = ucb_all(qs=self.qs[s_id],
+                           c_puct_normed_by_sum=c_puct * np.sqrt(
+                               self.visits[s_id][avail_a].sum()),
+                           ps=self.memory_.get_p(s, self.ag_id),
+                           nas=self.visits[s_id])
+            # print(self.visits[s_id])
+            # print(self.qs[s_id])
+            # print(ucbs)
+            # print("--")
+            return avail_a[np.argmax(ucbs[avail_a])]
 
     def update_qn_(self, s_id, action, v):
         n_sa = self.visits[s_id][action]
@@ -52,7 +55,8 @@ class MctsAgent:
         sb = s.tobytes()
         assert sb in self.state_ids
         s_id = self.state_ids[sb]
-        assert s_id in self.visits
+        if s_id not in self.visits:
+            print(s)  # TODO: some bugs here, idk
         policy_count = self.visits[s_id]
         if render:
             print(self.qs[s_id])

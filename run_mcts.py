@@ -4,9 +4,9 @@ from my_tictactoe import h, init_state, get_available_actions, model, n_players,
     CliAgent, player_symbols
 
 n_actions = h ** 2
-n_iters = 10
-n_eps = 16
-n_mcts = 128
+n_eps = 8
+n_iters = 128
+n_mcts = 16
 env_get_actions, env_model = get_available_actions, model
 
 mcts = Mcts(n_actions, n_players, n_mcts, env_get_actions)

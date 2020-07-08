@@ -1,6 +1,8 @@
 import numpy as np
 
 # bad: -2, empty: -1, players: 0, 1, 2...
+from networks import TttNet
+
 State = np.ndarray
 Action = int
 
@@ -8,6 +10,7 @@ h = 3
 player_symbols = ['x', 'o']
 n_players = len(player_symbols)
 init_state: State = np.full(h ** 2, -1)
+ttt_net = TttNet(h, n_players, h ** 2)
 
 
 # noinspection PyShadowingNames
@@ -119,3 +122,16 @@ class CliAgent:
         print(" " + "-" * (h * 4 + 1))
         i = int(input("Enter your next move as position number:"))
         return i
+
+
+def get_symmetries(state):
+    # mirror, rotational
+    board = state.reshape(h, h)
+    sym = []
+    for i in range(1, 5):
+        for j in True, False:
+            new_board = np.rot90(board, i)
+            if j:
+                new_board = np.fliplr(new_board)
+            sym.append(new_board.flatten())
+    return sym

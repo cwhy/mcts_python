@@ -2,33 +2,42 @@ import itertools
 from typing import List, Tuple
 
 import numpy as np
+from tqdm import tqdm
 
 from mcts_agent import MctsAgent
 from mcts_agent import StateID, Action
-from table_utils import TablePolicy
+from memory_utils import NNPolicy
+from my_tictactoe import ttt_net, get_symmetries
+
+device = 'cpu'
 
 
 class Mcts:
-    def __init__(self, n_actions: int, n_players: int, n_mcts: int,
+    def __init__(self,
+                 n_actions: int,
+                 n_agents: int,
+                 n_mcts: int,
                  get_available_actions):
         self.n_mcts = n_mcts
         self.agents = []
-        self.memory_ = TablePolicy(n_actions)
-        for i in range(n_players):
+        self.memory_ = NNPolicy(ttt_net, device=device)
+        for i in range(n_agents):
             agent = MctsAgent(i, n_actions, self.memory_, get_available_actions)
             self.agents.append(agent)
 
         for agent in self.agents:
-            agent.assign_next_(self.agents[(agent.ag_id + 1) % n_players])
+            agent.assign_next_(self.agents[(agent.ag_id + 1) % n_agents])
 
-    def self_play_(self, env_model, init_state, n_iters, n_eps):
-        examples = []
-        for _ in range(n_iters):
+    def self_play_(self, env_model, init_state, n_eps, n_iters):
+        self.memory_.clear_()
+        for _ in tqdm(range(n_iters)):
             for _ in range(n_eps):
                 s = init_state
                 agents_gen = itertools.cycle(self.agents)
                 curr_agent_ = next(agents_gen)
-                while True:
+                done = False
+                total_rewards = np.zeros(len(self.agents))
+                while not done:
                     for _ in range(self.n_mcts):
                         search_(env_model, s, self.agents, curr_agent_.ag_id)
 
@@ -37,21 +46,21 @@ class Mcts:
                     next_s, rewards, done, next_id, message = env_model(s,
                                                                         action,
                                                                         curr_agent_.ag_id)
+                    total_rewards += np.array(
+                        [rewards[i] for i, _ in enumerate(self.agents)])
+                    self.memory_.add_with_symmetry(curr_agent_.ag_id, s, policy, get_symmetries)
                     curr_agent_ = next(agents_gen)
                     assert next_id == curr_agent_.ag_id
-                    if done:
-                        examples.append(
-                            [curr_agent_.ag_id, s, policy, rewards])
-                        break
-                    else:
-                        s = next_s
-            self.memory_.train_(examples)
+                    s = next_s
+                self.memory_.assign_values_(total_rewards)
+            self.memory_.train_()
 
     def get_agent_decision_fn(self, ag_id: int, env_model):
         def decision(s, render=False):
             for _ in range(self.n_mcts):
                 search_(env_model, s, self.agents, ag_id)
             return self.agents[ag_id].find_action(s, render)
+
         return decision
 
 
@@ -64,7 +73,8 @@ def search_(env_model, state, agents: List[MctsAgent], ag_id: int):
     while True:
         sb = s.tobytes()
         if sb not in curr_agent_.state_ids:
-            v = np.zeros(n_agents)  # self.memory_.get_v(s)
+            v = np.zeros(n_agents)
+            v[curr_agent_.ag_id] += curr_agent_.memory_.get_v(s, curr_agent_.ag_id)
             curr_agent_.states_.append(s)
             curr_agent_.state_ids[sb] = len(curr_agent_.states_) - 1
             all_vs.append(v)
