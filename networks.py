@@ -2,7 +2,7 @@ import torch
 from torch import nn, Tensor
 import torch.nn.functional as F
 
-
+# TODO action query
 class TttNet(nn.Module):
     def __init__(self, h: int,
                  n_agents: int,

@@ -1,6 +1,4 @@
 import numpy as np
-import torch
-import torch.nn.functional as F
 
 
 def ucb(q: float, c_puct: float, p: float, n: float, na: float, temperature=1):
@@ -19,7 +17,3 @@ def ucb_all(qs: np.array,
 #          - torch.logsumexp(a, dim=-1) \
 #          + torch.logsumexp(b, dim=-1)
 #     return kl
-
-
-def kl_check(a, b):
-    return F.kl_div(a, F.softmax(b, -1))

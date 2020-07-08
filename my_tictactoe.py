@@ -1,15 +1,10 @@
 import numpy as np
+from typing import Tuple, List
 
-# bad: -2, empty: -1, players: 0, 1, 2...
+from config import h, n_players, State, Action, player_symbols, Env, n_actions, init_state, EnvOutput
 from networks import TttNet
 
-State = np.ndarray
-Action = int
 
-h = 3
-player_symbols = ['x', 'o']
-n_players = len(player_symbols)
-init_state: State = np.full(h ** 2, -1)
 ttt_net = TttNet(h, n_players, h ** 2)
 
 
@@ -35,20 +30,20 @@ win_patterns = get_win_patterns(h)
 
 
 def rewards_winner_take_all(num: float, player: int):
-    rewards = [-num] * 2
+    rewards = np.full(2, -num)
     rewards[player] += num * 2
-    return tuple(rewards)
+    return rewards
 
 
 def rewards_individual(num: float, player: int):
-    rewards = [0] * 2
+    rewards = np.full(2, 0)
     rewards[player] += num
-    return tuple(rewards)
+    return rewards
 
 
 def rewards_all(num: float):
-    rewards = [num] * 2
-    return tuple(rewards)
+    rewards = np.full(2, num)
+    return rewards
 
 
 def model(s: State, a: Action, player: int, render: bool = False):
@@ -80,7 +75,7 @@ def model(s: State, a: Action, player: int, render: bool = False):
               f"with reward {rewards[player]}"
     if render:
         render_(s)
-    return s, rewards, done, next_player, message
+    return EnvOutput(s, rewards, done, next_player, message)
 
 
 def render_(s):
@@ -112,7 +107,7 @@ class CliAgent:
     def __init__(self, agent_id: int):
         self.ag_id = agent_id
 
-    def find_action(self, s, render=False):
+    def find_action(self, s: State, render: bool=False) -> Action:
         print("Current Game State:")
         render_(s)
         print("Position numbers:")
@@ -124,14 +119,32 @@ class CliAgent:
         return i
 
 
-def get_symmetries(state):
+def get_symmetries(state: State, actions: np.ndarray) -> Tuple[List[State], List[np.ndarray]]:
     # mirror, rotational
     board = state.reshape(h, h)
-    sym = []
+    board_a = actions.reshape(h, h)
+    boards = []
+    boards_a = []
     for i in range(1, 5):
         for j in True, False:
             new_board = np.rot90(board, i)
+            new_board_a = np.rot90(board_a, i)
             if j:
                 new_board = np.fliplr(new_board)
-            sym.append(new_board.flatten())
-    return sym
+                new_board_a = np.fliplr(new_board_a)
+            boards.append(new_board.flatten())
+            boards_a.append(new_board_a.flatten())
+    return boards, boards_a
+
+
+ttt_env = Env(
+    n_agents=n_players,
+    n_actions=n_actions,
+    init_state=init_state,
+    agent_symbols=player_symbols,
+    model=model,
+    get_actions=get_available_actions,
+    render_=render_,
+    get_symmetries=get_symmetries,
+    cli_agent= CliAgent
+)

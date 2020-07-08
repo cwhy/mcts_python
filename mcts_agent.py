@@ -1,34 +1,38 @@
 from collections import defaultdict
 from typing import Dict, List
 import numpy as np
-from math_calc import ucb_all
 
-Action = int
-State = np.ndarray
-StateID = int
-c_puct = 1.
+from config import StateID, c_puct, State, Env
+from math_calc import ucb_all
 
 
 class MctsAgent:
-    def __init__(self, agent_id: int, n_actions: int, memory,
-                 env_get_actions):
+    def __init__(self, agent_id: int,
+                 states: List[State],
+                 state_ids: Dict[bytes, StateID],
+                 env: Env):
         self.ag_id = agent_id
-        self.memory_ = memory
-        self.states_: List[np.ndarray] = []
-        self.state_ids: Dict[bytes, StateID] = {}
         self.visits: Dict[StateID, np.ndarray] \
-            = defaultdict(lambda: np.zeros(n_actions))
+            = defaultdict(lambda: np.zeros(env.n_actions))
         self.qs: Dict[StateID, np.ndarray] \
-            = defaultdict(lambda: np.zeros(n_actions))
-        self.combined_rewards = lambda v, v_next: v - v_next
+            = defaultdict(lambda: np.zeros(env.n_actions))
         self.next_agent = None
+        self.states_ = states
+        self.state_ids = state_ids
+        self.n_actions = env.n_actions
 
-        self.get_actions = env_get_actions
+        self.get_actions = env.get_actions
+
+    def reset_(self):
+        self.visits: Dict[StateID, np.ndarray] \
+            = defaultdict(lambda: np.zeros(self.n_actions))
+        self.qs: Dict[StateID, np.ndarray] \
+            = defaultdict(lambda: np.zeros(self.n_actions))
 
     def assign_next_(self, agent: "MctsAgent"):
         self.next_agent = agent
 
-    def selection(self, s_id):
+    def selection(self, s_id, ps: np.ndarray) -> int:
         s = self.states_[s_id]
         avail_a = self.get_actions(s)
         if len(avail_a) == 1:
@@ -37,7 +41,7 @@ class MctsAgent:
             ucbs = ucb_all(qs=self.qs[s_id],
                            c_puct_normed_by_sum=c_puct * np.sqrt(
                                self.visits[s_id][avail_a].sum()),
-                           ps=self.memory_.get_p(s, self.ag_id),
+                           ps=ps/ps[avail_a].sum(),
                            nas=self.visits[s_id])
             # print(self.visits[s_id])
             # print(self.qs[s_id])
@@ -59,8 +63,8 @@ class MctsAgent:
             print(s)  # TODO: some bugs here, idk
         policy_count = self.visits[s_id]
         if render:
-            print(self.qs[s_id])
-            print(self.visits[s_id])
+            print("Q: ", self.qs[s_id])
+            print("N: ", self.visits[s_id])
 
         if not policy_count.any():
             avail_a = self.get_actions(s)
@@ -71,5 +75,5 @@ class MctsAgent:
 
     def find_action(self, s: State, render=False):
         policy = self.find_policy(s, render=render)
-        action = np.random.choice(len(policy), p=policy)
+        action = np.argmax(policy)
         return action
