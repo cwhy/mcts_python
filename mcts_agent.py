@@ -22,12 +22,6 @@ class MctsAgent:
 
         self.get_actions = env.get_actions
 
-    def reset_(self):
-        self.visits: Dict[StateID, np.ndarray] \
-            = defaultdict(lambda: np.zeros(self.n_actions))
-        self.qs: Dict[StateID, np.ndarray] \
-            = defaultdict(lambda: np.zeros(self.n_actions))
-
     def selection(self, s_id, ps: np.ndarray) -> int:
         s = self.states_[s_id]
         avail_a = self.get_actions(s)
@@ -55,8 +49,7 @@ class MctsAgent:
         sb = s.tobytes()
         assert sb in self.state_ids
         s_id = self.state_ids[sb]
-        if s_id not in self.visits:
-            print(s)  # TODO: some bugs here, idk
+        assert s_id in self.visits
         policy_count = self.visits[s_id]
         if render:
             print("Q: ", self.qs[s_id])

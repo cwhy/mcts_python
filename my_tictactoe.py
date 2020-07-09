@@ -1,9 +1,13 @@
 import numpy as np
 from typing import Tuple, List
 
-from config import h, n_players, State, Action, player_symbols, Env, n_actions, init_state, EnvOutput
+from config import h, State, Action, player_symbols, Env, EnvOutput
 from networks import TttNet
 
+# bad: -2, empty: -1, players: 0, 1, 2...
+init_state: State = np.full(h ** 2, -1)
+n_actions = h ** 2
+n_players = len(player_symbols)
 
 ttt_net = TttNet(h, n_players, h ** 2)
 
@@ -107,6 +111,7 @@ class CliAgent:
     def __init__(self, agent_id: int):
         self.ag_id = agent_id
 
+    # noinspection PyMethodMayBeStatic
     def find_action(self, s: State, render: bool=False) -> Action:
         print("Current Game State:")
         render_(s)

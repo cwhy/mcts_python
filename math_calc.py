@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def ucb(q: float, c_puct: float, p: float, n: float, na: float, temperature=1):
+def ucb(q: float, c_puct: float, p: float, n: float, na: float):
     return q + c_puct * p * np.sqrt(n) / (1 + na)
 
 

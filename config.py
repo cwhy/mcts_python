@@ -44,12 +44,7 @@ class Env(NamedTuple):
 
 ## Environment
 player_symbols = ['x', 'o']
-n_players = len(player_symbols)
-
 h = 3
-# bad: -2, empty: -1, players: 0, 1, 2...
-init_state: State = np.full(h ** 2, -1)
-n_actions = h ** 2
 
 
 ## MCTS setting
@@ -65,3 +60,7 @@ c_puct = 1.0
 max_batch_size = 1024
 lr = 0.001
 device = 'cuda'
+
+
+## Experiment setting
+exp_name = f'ttt_{h}_n_mcts_{n_mcts}_net1'

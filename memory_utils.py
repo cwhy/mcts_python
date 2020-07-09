@@ -19,7 +19,7 @@ class FlatMemory:
     def add_(self, _, __, ___):
         pass
 
-    def add_with_symmetry(self, ag_id, s, policy, symmetry):
+    def add_with_symmetry_(self, ag_id, s, policy, symmetry):
         pass
 
     def assign_values_(self, _):
@@ -48,7 +48,6 @@ class NNMemory(FlatMemory):
         self.values = []
         self.ps_: Dict[Tuple[bytes, int], np.ndarray] = {}
         self.vs_: Dict[Tuple[bytes, int], float] = {}
-        self.optimizer = torch.optim.Adam(lr=lr, params=model.parameters())
 
     def clear_(self):
         self.ag_ids = []
@@ -63,7 +62,7 @@ class NNMemory(FlatMemory):
         self.states.append(s)
         self.policies.append(policy)
 
-    def add_with_symmetry(self, ag_id, s, policy, symmetry):
+    def add_with_symmetry_(self, ag_id, s, policy, symmetry):
         states, policies = symmetry(s, policy)
         self.states += states
         self.ag_ids += len(states) * [ag_id]
@@ -73,13 +72,6 @@ class NNMemory(FlatMemory):
         len_diff = len(self.ag_ids) - len(self.values)
         self.values += [total_rewards] * len_diff
 
-    def train_batch_(self, states, ag_ids, policies, values):
-        self.optimizer.zero_grad()
-        p_logits, v = self.model.forward(states, ag_ids)
-        loss_p = F.kl_div(p_logits, policies, reduction='batchmean')
-        loss_v = F.mse_loss(v.flatten(), values)
-        (loss_p + loss_v).backward()
-        self.optimizer.step()
 
     def train_(self):
         self.model.train()
@@ -91,7 +83,7 @@ class NNMemory(FlatMemory):
         values = torch.tensor(value_currs).float()
         if 0 < mem_size < max_batch_size:
             shuffle = torch.randperm(len(self.values))
-            self.train_batch_(
+            self.model.train_batch_(
                 states = states[shuffle, :].to(self.device),
                 ag_ids = ag_ids[shuffle].to(self.device),
                 policies = policies[shuffle, :].to(self.device),
@@ -100,7 +92,7 @@ class NNMemory(FlatMemory):
             n_rounds = int(torch.ceil(mem_size / max_batch_size)) + 2
             for _ in range(n_rounds):
                 sample = torch.randint(mem_size, max_batch_size)
-                self.train_batch_(
+                self.model.train_batch_(
                     states=states[sample, :].to(self.device),
                     ag_ids=ag_ids[sample].to(self.device),
                     policies=policies[sample, :].to(self.device),
@@ -112,7 +104,7 @@ class NNMemory(FlatMemory):
         else:
             torch_s = torch.tensor(s).unsqueeze(0).to(self.device)
             torch_agid = torch.tensor(ag_id).unsqueeze(0).to(self.device)
-            p = self.model.forward_p(torch_s, torch_agid).flatten().numpy()
+            p = self.model.forward_p(torch_s, torch_agid).flatten().cpu().numpy()
             self.ps_[(s.tobytes(), ag_id)] = p
             return p
 

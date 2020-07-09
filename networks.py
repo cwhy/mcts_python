@@ -2,9 +2,13 @@ import torch
 from torch import nn, Tensor
 import torch.nn.functional as F
 
-# TODO action query
+# TODO action query, add train part, enable multiprocessing
+from config import lr
+
+
 class TttNet(nn.Module):
-    def __init__(self, h: int,
+    def __init__(self,
+                 h: int,
                  n_agents: int,
                  max_actions: int,
                  hidden_dim: int = 16,
@@ -14,6 +18,7 @@ class TttNet(nn.Module):
         self.agent_embed = nn.Embedding(n_agents + 1, agent_embed_dim)
         self.get_v = nn.Linear(hidden_dim * agent_embed_dim, 1)
         self.get_p_logits = nn.Linear(hidden_dim * agent_embed_dim, max_actions)
+        self.optimizer = torch.optim.Adam(lr=lr, params=self.parameters())
 
     def get_embed(self, s, ag_id) -> Tensor:
         a_embd = self.agent_embed(ag_id + 1)
@@ -37,3 +42,11 @@ class TttNet(nn.Module):
         with torch.no_grad():
             embd = self.get_embed(s, ag_id)
             return self.get_v(embd)
+
+    def train_batch_(self, states, ag_ids, policies, values):
+        self.optimizer.zero_grad()
+        p_logits, v = self.forward(states, ag_ids)
+        loss_p = F.kl_div(p_logits, policies, reduction='batchmean')
+        loss_v = F.mse_loss(v.flatten(), values)
+        (loss_p + loss_v).backward()
+        self.optimizer.step()
