@@ -49,7 +49,7 @@ h = 3
 
 ## MCTS setting
 n_iters = 64
-n_eps = 16
+n_eps = 32
 n_mcts = 64
 
 

@@ -2,7 +2,7 @@ import torch
 from torch import nn, Tensor
 import torch.nn.functional as F
 
-# TODO action query, add train part, enable multiprocessing
+# TODO action query
 from config import lr
 
 
