@@ -29,6 +29,7 @@ class EnvModel(Protocol):
         pass
 
 class Env(NamedTuple):
+    name: str
     n_agents: int
     n_actions: int
     init_state: State
@@ -43,24 +44,23 @@ class Env(NamedTuple):
 
 ## Environment
 player_symbols = ['x', 'o']
-n_players = len(player_symbols)
-
-h = 4
-# bad: -2, empty: -1, players: 0, 1, 2...
-init_state: State = np.full(h ** 2, -1)
-n_actions = h ** 2
+h = 3
 
 
 ## MCTS setting
-n_iters = 4096
-n_eps = 8
-n_mcts = 128
+n_iters = 64
+n_eps = 32
+n_mcts = 64
 
 
 ## Bandit setting
 c_puct = 1.0
 
 ## Neural Network setting
-max_batch_size = 4096
+max_batch_size = 1024
 lr = 0.001
-device = 'cpu'
+device = 'cuda'
+
+
+## Experiment setting
+exp_name = f'ttt_{h}_n_mcts_{n_mcts}_net1'
