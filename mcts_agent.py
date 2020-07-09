@@ -16,7 +16,6 @@ class MctsAgent:
             = defaultdict(lambda: np.zeros(env.n_actions))
         self.qs: Dict[StateID, np.ndarray] \
             = defaultdict(lambda: np.zeros(env.n_actions))
-        self.next_agent = None
         self.states_ = states
         self.state_ids = state_ids
         self.n_actions = env.n_actions
@@ -28,9 +27,6 @@ class MctsAgent:
             = defaultdict(lambda: np.zeros(self.n_actions))
         self.qs: Dict[StateID, np.ndarray] \
             = defaultdict(lambda: np.zeros(self.n_actions))
-
-    def assign_next_(self, agent: "MctsAgent"):
-        self.next_agent = agent
 
     def selection(self, s_id, ps: np.ndarray) -> int:
         s = self.states_[s_id]

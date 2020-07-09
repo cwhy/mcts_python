@@ -138,6 +138,7 @@ def get_symmetries(state: State, actions: np.ndarray) -> Tuple[List[State], List
 
 
 ttt_env = Env(
+    name="TicTacToe",
     n_agents=n_players,
     n_actions=n_actions,
     init_state=init_state,

@@ -17,17 +17,14 @@ class Mcts:
                  memory: NNMemory,
                  env: Env):
         self.n_mcts = n_mcts
-        self.agents: List[MctsAgent] = []
         self.states_: List[State] = []
         self.state_ids: Dict[bytes, StateID] = {}
         self.memory_ = memory
         self.env = env
-        for i in range(env.n_agents):
-            agent = MctsAgent(i, self.states_, self.state_ids, env)
-            self.agents.append(agent)
-
-        for agent in self.agents:
-            agent.assign_next_(self.agents[(agent.ag_id + 1) % env.n_agents])
+        self.agents: List[MctsAgent] = [
+            MctsAgent(i, self.states_, self.state_ids, env)
+            for i in range(env.n_agents)
+        ]
 
     def reset_(self):
         self.states_.clear()
@@ -41,8 +38,7 @@ class Mcts:
             for _ in range(n_eps):
                 self.reset_()
                 s = self.env.init_state
-                agents_gen = itertools.cycle(self.agents)
-                curr_agent_ = next(agents_gen)
+                curr_agent_ = self.agents[0]
                 done = False
                 total_rewards = np.zeros(len(self.agents))
                 while not done:
@@ -57,8 +53,7 @@ class Mcts:
                                                    s,
                                                    policy,
                                                    self.env.get_symmetries)
-                    curr_agent_ = next(agents_gen)
-                    assert env_output.next_agent_id == curr_agent_.ag_id
+                    curr_agent_ = self.agents[env_output.next_agent_id]
                     s = env_output.next_state
                     done = env_output.done
                 self.memory_.assign_values_(total_rewards)
@@ -103,7 +98,7 @@ class Mcts:
                 env_output = env_model(s, action, curr_agent_.ag_id, render=False)
                 all_vs[s_id] += env_output.rewards
                 history.append((curr_agent_.ag_id, s_id, action))
-                curr_agent_ = curr_agent_.next_agent
+                curr_agent_ = self.agents[env_output.next_agent_id]
                 s = env_output.next_state
                 done = env_output.done
 

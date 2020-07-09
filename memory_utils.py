@@ -73,34 +73,45 @@ class NNMemory(FlatMemory):
         len_diff = len(self.ag_ids) - len(self.values)
         self.values += [total_rewards] * len_diff
 
+    def train_batch_(self, states, ag_ids, policies, values):
+        self.optimizer.zero_grad()
+        p_logits, v = self.model.forward(states, ag_ids)
+        loss_p = F.kl_div(p_logits, policies, reduction='batchmean')
+        loss_v = F.mse_loss(v.flatten(), values)
+        (loss_p + loss_v).backward()
+        self.optimizer.step()
+
     def train_(self):
         self.model.train()
-        if 0 < len(self.values) < max_batch_size:
-            self.optimizer.zero_grad()
-            states = torch.tensor(self.states).to(self.device)
-            ag_ids = torch.tensor(self.ag_ids).to(self.device)
-            policies = torch.tensor(self.policies).to(self.device).float()
-            value_currs = [v[a] for v, a in zip(self.values, self.ag_ids)]
-            values = torch.tensor(value_currs).to(self.device).float()
+        mem_size = len(self.values)
+        states = torch.tensor(self.states)
+        ag_ids = torch.tensor(self.ag_ids)
+        policies = torch.tensor(self.policies).float()
+        value_currs = [v[a] for v, a in zip(self.values, self.ag_ids)]
+        values = torch.tensor(value_currs).float()
+        if 0 < mem_size < max_batch_size:
             shuffle = torch.randperm(len(self.values))
-            states = states[shuffle, :]
-            ag_ids = ag_ids[shuffle]
-            policies = policies[shuffle, :]
-            values = values[shuffle]
-            p_logits, v = self.model.forward(states, ag_ids)
-            loss_p = F.kl_div(p_logits, policies, reduction='batchmean')
-            loss_v = F.mse_loss(v.flatten(), values)
-            (loss_p + loss_v).backward()
-            self.optimizer.step()
+            self.train_batch_(
+                states = states[shuffle, :].to(self.device),
+                ag_ids = ag_ids[shuffle].to(self.device),
+                policies = policies[shuffle, :].to(self.device),
+                values = values[shuffle].to(self.device))
         else:
-            print(" Too long, not training")
+            n_rounds = int(torch.ceil(mem_size / max_batch_size)) + 2
+            for _ in range(n_rounds):
+                sample = torch.randint(mem_size, max_batch_size)
+                self.train_batch_(
+                    states=states[sample, :].to(self.device),
+                    ag_ids=ag_ids[sample].to(self.device),
+                    policies=policies[sample, :].to(self.device),
+                    values=values[sample].to(self.device))
 
     def get_p(self, s: State, ag_id: int) -> np.ndarray:
         if (s.tobytes(), ag_id) in self.ps_:
             return self.ps_[(s.tobytes(), ag_id)]
         else:
-            torch_s = torch.tensor(s).unsqueeze(0)
-            torch_agid = torch.tensor(ag_id).unsqueeze(0)
+            torch_s = torch.tensor(s).unsqueeze(0).to(self.device)
+            torch_agid = torch.tensor(ag_id).unsqueeze(0).to(self.device)
             p = self.model.forward_p(torch_s, torch_agid).flatten().numpy()
             self.ps_[(s.tobytes(), ag_id)] = p
             return p
@@ -109,8 +120,8 @@ class NNMemory(FlatMemory):
         if (s.tobytes(), ag_id) in self.vs_:
             return self.vs_[(s.tobytes(), ag_id)]
         else:
-            torch_s = torch.tensor(s).unsqueeze(0)
-            torch_agid = torch.tensor(ag_id).unsqueeze(0)
+            torch_s = torch.tensor(s).unsqueeze(0).to(self.device)
+            torch_agid = torch.tensor(ag_id).unsqueeze(0).to(self.device)
             v = self.model.forward_v(torch_s, torch_agid).item()
             self.vs_[(s.tobytes(), ag_id)] = v
             return v
