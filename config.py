@@ -45,22 +45,22 @@ class Env(NamedTuple):
 player_symbols = ['x', 'o']
 n_players = len(player_symbols)
 
-h = 3
+h = 4
 # bad: -2, empty: -1, players: 0, 1, 2...
 init_state: State = np.full(h ** 2, -1)
 n_actions = h ** 2
 
 
 ## MCTS setting
-n_iters = 128
+n_iters = 4096
 n_eps = 8
-n_mcts = 32
+n_mcts = 128
 
 
 ## Bandit setting
 c_puct = 1.0
 
 ## Neural Network setting
-max_batch_size = 1024
+max_batch_size = 4096
 lr = 0.001
 device = 'cpu'

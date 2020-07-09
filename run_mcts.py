@@ -1,4 +1,5 @@
-from config import n_mcts, n_eps, n_iters, device, Env
+import torch
+from config import n_mcts, n_eps, n_iters, device, Env, h
 from env_utils import pit, RandomAgent
 from mcts import Mcts
 from memory_utils import NNMemory
@@ -23,6 +24,8 @@ for _ in range(5):
     pit(env, [RandomAgent(0, env).find_action, mcts_agent1])
     print('-----------------------------------------')
 
+exp_name = f'ttt_{h}_nmcts_{n_mcts}.pth'
+torch.save(ttt_net.state_dict(), f'saved_models/{exp_name}')
 print("Testing Against Cli/Human...")
 print(f"as {env.agent_symbols[0]}")
 mcts_agent0 = Mcts(n_mcts, memory, env).get_agent_decision_fn(0)
