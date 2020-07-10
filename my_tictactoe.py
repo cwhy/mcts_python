@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple, List
 
-from config import h, State, Action, player_symbols, Env, EnvOutput
+from config import h, State, Action, player_symbols, Env, EnvOutput, device
 from networks import TttNet
 
 # bad: -2, empty: -1, players: 0, 1, 2...
@@ -9,7 +9,7 @@ init_state: State = np.full(h ** 2, -1)
 n_actions = h ** 2
 n_players = len(player_symbols)
 
-ttt_net = TttNet(h, n_players, h ** 2)
+ttt_net = TttNet(device, h, n_players, h ** 2)
 
 
 # noinspection PyShadowingNames

@@ -3,7 +3,6 @@ from typing import List, Tuple, Dict
 
 import numpy as np
 import torch
-from tqdm import tqdm
 
 from config import Action, StateID, State, Env
 from mcts_agent import MctsAgent
@@ -69,32 +68,32 @@ class Mcts:
             return self.agents[ag_id].find_action(s, render)
         return decision
 
+    def self_play(self, memory_: NNMemory):
+        ag_ids = []
+        states = []
+        policies = []
+        values = []
+        s = self.env.init_state
+        curr_agent_ = self.agents[0]
+        done = False
+        total_rewards = np.zeros(len(self.agents))
+        while not done:
+            for _ in range(self.n_mcts):
+                self.search_(memory_, s, curr_agent_.ag_id)
 
-def mcts_self_play_(memory_: NNMemory, env: Env, n_mcts: int, n_eps: int, n_iters: int):
-    for _ in tqdm(range(n_iters)):
-        memory_.clear_()
-        for _ in range(n_eps):
-            mcts = Mcts(n_mcts, env)
-            s = mcts.env.init_state
-            curr_agent_ = mcts.agents[0]
-            done = False
-            total_rewards = np.zeros(len(mcts.agents))
-            while not done:
-                for _ in range(mcts.n_mcts):
-                    mcts.search_(memory_, s, curr_agent_.ag_id)
+            policy = curr_agent_.find_policy(s)
+            action = np.random.choice(len(policy), p=policy)
+            env_output = self.env.model(s, action, curr_agent_.ag_id, render=False)
+            total_rewards += env_output.rewards
 
-                policy = curr_agent_.find_policy(s)
-                action = np.random.choice(len(policy), p=policy)
-                env_output = mcts.env.model(s, action, curr_agent_.ag_id, render=False)
-                total_rewards += env_output.rewards
-                memory_.add_with_symmetry_(curr_agent_.ag_id,
-                                           s,
-                                           policy,
-                                           mcts.env.get_symmetries)
-                curr_agent_ = mcts.agents[env_output.next_agent_id]
-                s = env_output.next_state
-                done = env_output.done
-            memory_.assign_values_(total_rewards)
-        memory_.train_()
+            _states, _policies = self.env.get_symmetries(s, policy)
+            states += _states
+            policies += _policies
+            ag_ids += len(states) * [curr_agent_.ag_id]
 
+            curr_agent_ = self.agents[env_output.next_agent_id]
+            s = env_output.next_state
+            done = env_output.done
 
+        values.extend(total_rewards for _ in range(len(states)))
+        return ag_ids, states, policies, values

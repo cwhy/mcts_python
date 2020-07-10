@@ -3,29 +3,34 @@ from torch import nn, Tensor
 import torch.nn.functional as F
 
 # TODO action query
+# TODO batch normalization
 from config import lr
 
 
 class TttNet(nn.Module):
     def __init__(self,
+                 device: str,
                  h: int,
                  n_agents: int,
                  max_actions: int,
                  hidden_dim: int = 16,
                  agent_embed_dim: int = 4):
         super().__init__()
+        self.device = device
         self.state_t = nn.Linear(h ** 2, hidden_dim)
         self.agent_embed = nn.Embedding(n_agents + 1, agent_embed_dim)
         self.get_v = nn.Linear(hidden_dim * agent_embed_dim, 1)
         self.get_p_logits = nn.Linear(hidden_dim * agent_embed_dim, max_actions)
         self.optimizer = torch.optim.Adam(lr=lr, params=self.parameters())
+        self.to(device)
 
     def get_embed(self, s, ag_id) -> Tensor:
         a_embd = self.agent_embed(ag_id + 1)
         s_embd = self.agent_embed(s + 1).transpose(-1, -2)
         s_embd = self.state_t(s_embd).transpose(-1, -2)
         final_embs = (s_embd * a_embd.unsqueeze(-2)).flatten(-2, -1)
-        return final_embs
+        final_embs_relu = F.relu(final_embs)
+        return final_embs_relu
 
     def forward(self, s, ag_id):
         embd = self.get_embed(s, ag_id)
@@ -43,10 +48,3 @@ class TttNet(nn.Module):
             embd = self.get_embed(s, ag_id)
             return self.get_v(embd)
 
-    def train_batch_(self, states, ag_ids, policies, values):
-        self.optimizer.zero_grad()
-        p_logits, v = self.forward(states, ag_ids)
-        loss_p = F.kl_div(p_logits, policies, reduction='batchmean')
-        loss_v = F.mse_loss(v.flatten(), values)
-        (loss_p + loss_v).backward()
-        self.optimizer.step()
