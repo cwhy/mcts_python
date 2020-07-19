@@ -112,12 +112,12 @@ class CliAgent:
         self.ag_id = agent_id
 
     # noinspection PyMethodMayBeStatic
-    def find_action(self, s: State, render: bool=False) -> Action:
+    def find_action(self, s: State, render: bool = False) -> Action:
         print("Current Game State:")
         render_(s)
         print("Position numbers:")
         for i in range(0, h ** 2, h):
-            print_grid_line_(np.arange(0, h**2), i)
+            print_grid_line_(np.arange(0, h ** 2), i)
 
         print(" " + "-" * (h * 4 + 1))
         i = int(input("Enter your next move as position number:"))
@@ -152,5 +152,5 @@ ttt_env = Env(
     get_actions=get_available_actions,
     render_=render_,
     get_symmetries=get_symmetries,
-    cli_agent= CliAgent
+    cli_agent=CliAgent
 )

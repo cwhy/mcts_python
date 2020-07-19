@@ -36,23 +36,23 @@ class Env(NamedTuple):
     n_agents: int
     n_actions: int
     init_state: State
-    agent_symbols: List[str]
+    agent_symbols: Optional[List[str]]
     get_actions: Callable[[State], np.ndarray]
     model: EnvModel
-    render_: Callable[[State], None]
+    render_: Optional[Callable[[State], None]]
     get_symmetries: Optional[Callable[[State, np.ndarray],
                                       Tuple[List[State], List[np.ndarray]]]]
-    cli_agent: Type[Agent]
+    cli_agent: Optional[Type[Agent]]
 
 
 ## Environment
 player_symbols = ['x', 'o']
-h = 4
+h = 3
 
 ## MCTS setting
 n_iters = 64
-n_eps = 32
-n_mcts = 64
+n_eps = 8
+n_mcts = 32
 
 ## Bandit setting
 c_puct = 1.0

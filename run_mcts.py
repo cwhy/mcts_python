@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from tqdm import tqdm
 
 from config import n_mcts, n_eps, n_iters, exp_name
@@ -7,16 +8,17 @@ from mcts import Mcts
 from memory_utils import NNMemory
 from my_tictactoe import ttt_env as env, ttt_net as ttt_net_, CliAgent
 
-
 print("Learning...")
 for _ in tqdm(range(n_iters)):
     memory_ = NNMemory(ttt_net_, env.n_actions)
     exps = []
     for _ in range(n_eps):
-        mcts = Mcts(n_mcts, env)
+        mcts = Mcts(n_mcts, env, max_depth=100)
         exp = mcts.self_play(memory_)
-        exps += list(map(list, zip(*exp)))
-    memory_.train_(*zip(*exps))
+        exps.append(exp)
+    exps_arrays = [np.concatenate([ex[i] for ex in exps], axis=0) for i in range(4)]
+    # TODO reward normalization by 25% winning
+    memory_.train_(*exps_arrays)
 
 print("Testing Against Random...")
 memory_ = NNMemory(ttt_net_, env.n_actions)

@@ -22,7 +22,7 @@ class MctsAgent:
 
         self.get_actions = env.get_actions
 
-    def selection(self, s_id, ps: np.ndarray) -> int:
+    def selection(self, s_id: int, ps: np.ndarray) -> int:
         s = self.states_[s_id]
         avail_a = self.get_actions(s)
         if len(avail_a) == 1:
@@ -32,7 +32,7 @@ class MctsAgent:
                            c_puct_normed_by_sum=c_puct * np.sqrt(
                                self.visits[s_id][avail_a].sum()),
                            ps=ps/ps[avail_a].sum(),
-                           nas=self.visits[s_id])
+                           n_as=self.visits[s_id])
             # print(self.visits[s_id])
             # print(self.qs[s_id])
             # print(ucbs)

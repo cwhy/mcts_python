@@ -43,7 +43,7 @@ class MctsAgent:
             ucbs = ucb_all(qs=self.qs[s_id],
                            c_puct_normed_by_sum=c_puct * np.sqrt(self.visits[s_id][avail_a].sum()),
                            ps=self.memory_.get_p(s_id),
-                           nas=self.visits[s_id])
+                           n_as=self.visits[s_id])
             action = avail_a[np.argmax(ucbs[avail_a])]
             next_s, rewards, done, next_id, message = self.model(s, action, self.ag_id)
             if done:

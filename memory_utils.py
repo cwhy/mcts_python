@@ -36,7 +36,6 @@ class FlatMemory:
         return 0
 
 
-# TODO:  enable multiprocessing
 class NNMemory(FlatMemory):
     def __init__(self, model: nn.Module, n_actions: int):
         super().__init__(n_actions)
@@ -59,9 +58,9 @@ class NNMemory(FlatMemory):
         self.model.train()
         mem_size = len(_values)
         states = torch.tensor(_states)
-        ag_ids = torch.tensor(_ag_ids)
+        ag_ids = torch.tensor(_ag_ids).flatten()
         policies = torch.tensor(_policies).float()
-        value_currs = [v[a] for v, a in zip(_values, ag_ids)]
+        value_currs = _values[torch.arange(mem_size), ag_ids]
         values = torch.tensor(value_currs).float()
         if 0 < mem_size < max_batch_size:
             shuffle = torch.randperm(values.shape[0])
