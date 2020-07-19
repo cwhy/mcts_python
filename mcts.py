@@ -40,7 +40,6 @@ class Mcts:
                 all_vs[s_id] += v
                 break
             else:
-                sb = s.tobytes()
                 s_id = self.state_ids[sb]
                 action = curr_agent_.selection(s_id,
                                                memory.get_p(s, curr_agent_.ag_id))
