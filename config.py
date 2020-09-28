@@ -53,7 +53,7 @@ class Env(NamedTuple, Generic[State]):
 
 ## Environment
 player_symbols = ['x', 'o']
-h = 3
+h = 10
 
 ## MCTS setting
 n_iters = 2

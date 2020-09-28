@@ -58,7 +58,7 @@ class CliAgent:
 def get_symmetries(state: StateBoard,
                    actions: Actions,
                    wrapper: Callable[[np.ndarray], StateBoard]) -> Tuple[
-                                            List[StateBoard], List[Actions]]:
+    List[StateBoard], List[Actions]]:
     # mirror, rotational
     board = state.array.reshape(h, h)
     board_a = actions.reshape(h, h)
@@ -92,3 +92,18 @@ def rewards_individual(num: float, player: int):
 def rewards_all(num: float):
     rewards = np.full(2, num)
     return rewards
+
+
+move_along_in_dirs = [
+    lambda ii, jj, i=i, j=j: (ii + i, jj + j)
+    for i in range(-1, 2) for j in range(-1, 2) if not (i == 0 and j == 0)]
+
+
+def pos_to_arr_idx(pos: Tuple[int, int]) -> int:
+    i, j = pos
+    return h * i + j
+
+
+def check_bound(pos: Tuple[int, int]) -> bool:
+    i, j = pos
+    return 0 <= i < h and 0 <= j < h

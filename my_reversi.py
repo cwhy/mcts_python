@@ -4,7 +4,7 @@ from typing import Tuple, Hashable
 from config import h, State, Action, player_symbols, Env, device, \
     EnvOutput
 from gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, render_, \
-    get_actions, get_symmetries, CliAgent
+    get_actions, get_symmetries, CliAgent, check_bound, move_along_in_dirs, pos_to_arr_idx
 from networks import BoardNet
 
 env_name = "Reversi"
@@ -25,19 +25,6 @@ n_actions = h ** 2
 n_players = len(player_symbols)
 
 reversi_net = BoardNet(device, env_name, h ** 2, n_players, h ** 2)
-move_along_in_dirs = [
-    lambda ii, jj, i=i, j=j: (ii + i, jj + j)
-    for i in range(-1, 2) for j in range(-1, 2) if not (i == 0 and j == 0)]
-
-
-def pos_to_arr_idx(pos: Tuple[int, int]) -> int:
-    i, j = pos
-    return h * i + j
-
-
-def check_bound(pos: Tuple[int, int]) -> bool:
-    i, j = pos
-    return 0 <= i < h and 0 <= j < h
 
 
 def update_array_(s_array: np.ndarray, action: Action, player: int):

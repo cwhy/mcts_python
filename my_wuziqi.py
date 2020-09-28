@@ -4,7 +4,7 @@ from dataclasses import dataclass, replace
 from config import h, State, Action, player_symbols, Env, device, \
     EnvOutput
 from gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, render_, \
-    get_actions, get_symmetries, CliAgent
+    get_actions, get_symmetries, CliAgent, move_along_in_dirs, check_bound
 from networks import BoardNet
 
 env_name = "WuZiQi"
@@ -24,18 +24,27 @@ init_state: State = StateWZQ(np.full(h ** 2, -1))
 n_actions = h ** 2
 n_players = len(player_symbols)
 
-ttt_net = BoardNet(device, env_name, h ** 2, n_players, h ** 2)
+wzq_net = BoardNet(device, env_name, h ** 2, n_players, h ** 2)
 
 
-# noinspection PyShadowingNames
-def check_win(s_array: np.ndarray) -> bool:
+def check_win(s_array: np.ndarray, action: Action) -> bool:
+    action_idx = (action // h, action % h)
     grid = s_array.reshape((h, h))
-    sum_horizontal = np.sum(grid, axis=1)
-    sum_vertical = np.sum(grid, axis=0)
-    sum_diagonal_1 = np.sum(grid.diagonal())
-    sum_diagonal_2 = np.sum(np.flipud(grid).diagonal())
-    return (5 in sum_horizontal or 5 in sum_vertical
-            or sum_diagonal_1 == 5 or sum_diagonal_2 == 5)
+    for move_fn in move_along_in_dirs:
+        count = 1
+        pos = action_idx
+        while True:
+            pos = move_fn(*pos)
+            if not check_bound(pos):
+                break
+            else:
+                if grid[pos]:
+                    count += 1
+                else:
+                    break
+        if count >= 5:
+            return True
+    return False
 
 
 def model(s: StateWZQ, a: Action, player: int,
@@ -48,7 +57,7 @@ def model(s: StateWZQ, a: Action, player: int,
     else:
         s_new.array[a] = player
         p_pos = s_new.array == player
-        if check_win(p_pos):
+        if check_win(p_pos, a):
             reward_type = 'win'
             rewards = rewards_winner_take_all(1, player)
             done = True

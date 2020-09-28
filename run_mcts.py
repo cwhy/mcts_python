@@ -7,7 +7,7 @@ from env_utils import pit, RandomAgent
 from gridboard_utils import CliAgent
 from mcts import Mcts
 from memory_utils import NNMemoryAnyState
-from my_tictactoe import ttt_env as env, ttt_net as neural_net_
+from my_wuziqi import wuziqi_env as env, wzq_net as neural_net_
 
 print("Learning...")
 
