@@ -57,8 +57,8 @@ player_symbols = ['*', 'o']
 h = 7
 
 ## MCTS setting
-n_iters = 2
-n_eps = 2
+n_iters = 128
+n_eps = 64
 n_mcts = 128
 max_depth = 100
 
