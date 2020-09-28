@@ -43,7 +43,7 @@ class Mcts:
         depth_ = 0
         s_vs = np.zeros(n_agents)
         while not (done_ or (self.max_depth is not None and depth_ > self.max_depth)):
-            sb = self.env.state_utils.hash(s_, ag_id)
+            sb = self.env.state_utils.hash(s_, curr_agent_.ag_id)
             if sb not in self.state_ids_:
                 self.states_.append(s_)
                 self.state_ids_[sb] = len(self.states_) - 1
@@ -51,7 +51,7 @@ class Mcts:
                 break
             else:
                 s_id = self.state_ids_[sb]
-                avail_a = self.env.state_utils.get_actions(s_, ag_id)
+                avail_a = self.env.state_utils.get_actions(s_, curr_agent_.ag_id)
                 action = curr_agent_.selection(s_id, avail_a,
                                                memory.get_p(s_, curr_agent_.ag_id))
                 env_output = env_model(s_, action, curr_agent_.ag_id, render=False)

@@ -70,6 +70,6 @@ max_batch_size = 1024
 lr = 0.005
 
 ## Experiment setting
-exp_name = f'ttt_{h}_n_mcts_{n_mcts}_net1'
+exp_name = f'{env_name}_{h}_n_mcts_{n_mcts}_net1'
 device = 'cpu'
 n_pools = 0
