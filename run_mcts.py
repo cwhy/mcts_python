@@ -1,14 +1,16 @@
 from multiprocessing import Pool
 import numpy as np
 import torch
-from config import n_mcts, n_eps, n_iters, exp_name
+from config import n_mcts, n_eps, n_iters, exp_name, env_name, n_pools
 from tqdm import tqdm
 from env_utils import pit, RandomAgent
-from gridboard_utils import CliAgent
 from mcts import Mcts
 from memory_utils import NNMemoryAnyState
-from my_wuziqi import wuziqi_env as env, wzq_net as neural_net_
+from games import envs, nets, cli_agents
 
+env = envs[env_name]
+neural_net_ = nets[env_name]
+CliAgent = cli_agents[env_name]
 print("Learning...")
 
 for _ in tqdm(range(n_iters)):
@@ -20,8 +22,11 @@ for _ in tqdm(range(n_iters)):
         return mcts.self_play(memory_, i)
 
 
-    p = Pool(16)
-    exps = p.map(do_episode_, range(n_eps))
+    if n_pools > 0:
+        p = Pool(16)
+        exps = p.map(do_episode_, range(n_eps))
+    else:
+        exps = list(map(do_episode_, range(n_eps)))
     exps_arrays = [np.concatenate([ex[i] for ex in exps], axis=0) for i in range(4)]
     neural_net_.train_(*exps_arrays)
 

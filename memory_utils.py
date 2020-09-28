@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from typing import Dict, TypeVar, Hashable, Callable
 
-from config import lr, State, Env
+from config import State, Env
 
 T = TypeVar('T')
 
@@ -44,7 +44,7 @@ class NNMemoryAnyState(FlatMemory):
     def get_val(self, fn: Callable[[State, torch.Tensor], torch.Tensor],
                 cache: Dict[Hashable, T], state: State, ag_id: int) -> T:
         state_hash = self.hash(state, ag_id)
-        if state_hash in self.ps_:
+        if state_hash in cache:
             return cache[state_hash]
         else:
             torch_agid = torch.tensor(ag_id).unsqueeze(0).to(self.model.device).long()

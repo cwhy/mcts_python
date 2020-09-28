@@ -3,9 +3,9 @@ from typing import Hashable
 from dataclasses import dataclass, replace
 from config import h, State, Action, player_symbols, Env, device, \
     EnvOutput
-from gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, render_, \
+from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, render_, \
     get_actions, get_symmetries, CliAgent, move_along_in_dirs, check_bound
-from networks import BoardNet
+from networks import BasicBoardNet
 
 env_name = "WuZiQi"
 
@@ -24,7 +24,7 @@ init_state: State = StateWZQ(np.full(h ** 2, -1))
 n_actions = h ** 2
 n_players = len(player_symbols)
 
-wzq_net = BoardNet(device, env_name, h ** 2, n_players, h ** 2)
+wzq_net = BasicBoardNet(device, env_name, h ** 2, n_players, h ** 2)
 
 
 def check_win(s_array: np.ndarray, action: Action) -> bool:

@@ -19,7 +19,7 @@ def state_process(device: str, env_name: str):
         return lambda s: from_np(s.array)
 
 
-class BoardNet(nn.Module):
+class BasicBoardNet(nn.Module):
     def _forward_unimplemented(self, *input: Any) -> None:
         pass
 

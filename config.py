@@ -52,8 +52,9 @@ class Env(NamedTuple, Generic[State]):
 
 
 ## Environment
-player_symbols = ['x', 'o']
-h = 10
+env_name = 'WuZiQi_1swap'
+player_symbols = ['*', 'o']
+h = 7
 
 ## MCTS setting
 n_iters = 2
@@ -67,7 +68,8 @@ c_puct = 1.0
 ## Neural Network setting
 max_batch_size = 1024
 lr = 0.005
-device = 'cpu'
 
 ## Experiment setting
 exp_name = f'ttt_{h}_n_mcts_{n_mcts}_net1'
+device = 'cpu'
+n_pools = 0
