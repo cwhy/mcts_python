@@ -1,17 +1,10 @@
-import torch
 import numpy as np
-from pprint import pprint
-from mcts_agent import MctsAgent
-from memory_utils import FlatMemory
-from config import Action, StateID, Env, State
+import torch
 from typing import List, Tuple, Dict, Optional, Hashable
 
-
-def debug_print_(_as):
-    pprint({k: {kk: vv
-                for kk, vv in v.items()
-                if 'Edge' not in kk and 'Target' not in kk  # and 'Origin' not in kk
-                } for k, v in _as.items()})
+from config import Action, StateID, Env, State
+from mcts_agent import MctsAgent
+from memory_utils import FlatMemory
 
 
 class Mcts:
