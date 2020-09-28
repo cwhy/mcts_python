@@ -1,14 +1,16 @@
-from typing import Callable, NamedTuple, Optional, List, Type, Tuple
-from typing_extensions import Protocol
 import numpy as np
+from typing import Callable, NamedTuple, Optional, List, Type, Tuple, Hashable, TypeVar, Generic
+from typing_extensions import Protocol
 
 ## Types
 Action = int
-State = np.ndarray
 StateID = int
+Actions = np.ndarray
+
+State = TypeVar('State')
 
 
-class EnvOutput(NamedTuple):
+class EnvOutput(NamedTuple, Generic[State]):
     next_state: State
     rewards: np.ndarray
     done: bool
@@ -16,33 +18,37 @@ class EnvOutput(NamedTuple):
     message: str
 
 
-class Actor(Protocol):
-    def __call__(self, s: State, render: bool) -> Action:
-        pass
+class Env(NamedTuple, Generic[State]):
+    class StateUtils(NamedTuple):
+        hash: Callable[[State, int], Hashable]
+        get_actions: Callable[[State, int], Actions]
+        render_: Optional[Callable[[State], None]] = None
+        get_symmetries: Optional[Callable[[State, Actions],
+                                          Tuple[List[State], List[
+                                              Actions]]]] = None
 
+    class Actor(Protocol):
+        def __call__(self, s: State, render: bool) -> Action:
+            pass
 
-class Agent(Protocol):
-    def find_action(self, s: State, render: bool) -> Action:
-        pass
+    class Agent(Protocol):
+        def find_action(self, s: State, render: bool) -> Action:
+            pass
 
+    class EnvModel(Protocol):
+        def __call__(self, s: State, a: Action, player: int,
+                     render: bool) -> 'EnvOutput[State]':
+            pass
 
-class EnvModel(Protocol):
-    def __call__(self, s: State, a: Action, player: int, render: bool) -> EnvOutput:
-        pass
-
-
-class Env(NamedTuple):
     name: str
     n_agents: int
     n_actions: int
-    init_state: State
-    agent_symbols: Optional[List[str]]
-    get_actions: Callable[[State], np.ndarray]
+    init_state: Callable[[], State]
     model: EnvModel
-    render_: Optional[Callable[[State], None]]
-    get_symmetries: Optional[Callable[[State, np.ndarray],
-                                      Tuple[List[State], List[np.ndarray]]]]
-    cli_agent: Optional[Type[Agent]]
+    state_utils: StateUtils
+
+    agent_symbols: Optional[List[str]] = None
+    cli_agent: Optional[Type[Agent]] = None
 
 
 ## Environment
@@ -50,17 +56,18 @@ player_symbols = ['x', 'o']
 h = 3
 
 ## MCTS setting
-n_iters = 64
-n_eps = 8
-n_mcts = 32
+n_iters = 2
+n_eps = 2
+n_mcts = 128
+max_depth = 100
 
 ## Bandit setting
 c_puct = 1.0
 
 ## Neural Network setting
 max_batch_size = 1024
-lr = 0.001
-device = 'cuda'
+lr = 0.005
+device = 'cpu'
 
 ## Experiment setting
 exp_name = f'ttt_{h}_n_mcts_{n_mcts}_net1'

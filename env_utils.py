@@ -1,10 +1,10 @@
 from typing import List
 import numpy as np
-from config import Actor, Env
+from config import Env, State
 
 
-def pit(env: Env, actors: List[Actor], render:bool=False):
-    s = env.init_state
+def pit(env: Env, actors: List[Env.Actor], render: bool = False):
+    s = env.init_state()
     ag_id = 0
     current_actor_ = actors[ag_id]
     done = False
@@ -23,9 +23,9 @@ def pit(env: Env, actors: List[Actor], render:bool=False):
 
     if render:
         print("done")
-        env.render_(s)
+        env.state_utils.render_(s)
         print(action)
-    env.render_(env_output.next_state)
+    env.state_utils.render_(env_output.next_state)
     print(env_output.rewards)
     print(env_output.message)
     return env_output.rewards
@@ -33,9 +33,9 @@ def pit(env: Env, actors: List[Actor], render:bool=False):
 
 class RandomAgent:
     def __init__(self, agent_id: int, env: Env):
-        self.get_actions = env.get_actions
         self.ag_id = agent_id
+        self.get_actions = env.state_utils.get_actions
 
-    def find_action(self, s, render=False):
-        avail_a = self.get_actions(s)
+    def find_action(self, s: State, render=False):
+        avail_a = self.get_actions(s, self.ag_id)
         return np.random.choice(avail_a)

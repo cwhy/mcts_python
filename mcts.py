@@ -1,12 +1,17 @@
-from collections import defaultdict
-from typing import List, Tuple, Dict, Optional, NamedTuple
-
-import numpy as np
 import torch
-
-from config import Action, StateID, State, Env
+import numpy as np
+from pprint import pprint
 from mcts_agent import MctsAgent
-from memory_utils import NNMemory
+from memory_utils import FlatMemory
+from config import Action, StateID, Env, State
+from typing import List, Tuple, Dict, Optional, Hashable
+
+
+def debug_print_(_as):
+    pprint({k: {kk: vv
+                for kk, vv in v.items()
+                if 'Edge' not in kk and 'Target' not in kk  # and 'Origin' not in kk
+                } for k, v in _as.items()})
 
 
 class Mcts:
@@ -16,55 +21,61 @@ class Mcts:
                  max_depth: Optional[int] = None):
         self.n_mcts = n_mcts
         self.states_: List[State] = []
-        self.state_ids: Dict[bytes, StateID] = {}
+        self.state_ids_: Dict[Hashable, StateID] = {}
         self.env = env
         self.max_depth = max_depth
         self.agents: List[MctsAgent] = [
-            MctsAgent(i, self.states_, self.state_ids, env)
+            MctsAgent(i, env.n_actions)
             for i in range(env.n_agents)
         ]
+        self.debug = False
 
-    def search_(self, memory: NNMemory,
+    def search_(self, memory: FlatMemory,
                 start_state: State,
                 ag_id: int):
         env_model = self.env.model
         curr_agent_ = self.agents[ag_id]
         n_agents = len(self.agents)
-        # TODO fix all_vs to list
-        all_vs: Dict[StateID, np.ndarray] = defaultdict(lambda: np.zeros(n_agents))
-        history_: List[Tuple[int, StateID, Action]] = []
+        history_: List[Tuple[int, StateID, Action, float]] = []
 
         s_ = start_state
         done_ = False
         depth_ = 0
+        s_vs = np.zeros(n_agents)
         while not (done_ or (self.max_depth is not None and depth_ > self.max_depth)):
-            sb = s_.tobytes()
-            if sb not in self.state_ids:
-                v = np.zeros(n_agents)
-                v[curr_agent_.ag_id] += memory.get_v(s_, curr_agent_.ag_id)
+            sb = self.env.state_utils.hash(s_, ag_id)
+            if sb not in self.state_ids_:
                 self.states_.append(s_)
-                s_id = self.state_ids[sb] = len(self.states_) - 1
-                all_vs[s_id] = v
+                self.state_ids_[sb] = len(self.states_) - 1
+                s_vs = memory.get_v(s_, curr_agent_.ag_id)
                 break
             else:
-                s_id = self.state_ids[sb]
-                action = curr_agent_.selection(s_id,
+                s_id = self.state_ids_[sb]
+                avail_a = self.env.state_utils.get_actions(s_, ag_id)
+                action = curr_agent_.selection(s_id, avail_a,
                                                memory.get_p(s_, curr_agent_.ag_id))
                 env_output = env_model(s_, action, curr_agent_.ag_id, render=False)
-                all_vs[s_id] = env_output.rewards
-                history_.append((curr_agent_.ag_id, s_id, action))
+                history_.append((curr_agent_.ag_id, s_id, action, env_output.rewards))
                 curr_agent_ = self.agents[env_output.next_agent_id]
                 s_ = env_output.next_state
                 depth_ += 1
                 done_ = env_output.done
 
-        s_vs = np.zeros(n_agents)
-        for ag_id, s_id, a in reversed(history_):
-            s_vs += all_vs[s_id]
+        if depth_ > 5 and self.debug:
+            print(done_)
+            self.env.state_utils.render_(s_)
+        for ag_id, s_id, a, v in reversed(history_):
+            s_vs += v
+            if depth_ > 5 and self.debug:
+                print(ag_id, s_id, s_vs)
+                self.env.state_utils.render_(self.states_[s_id])
             self.agents[ag_id].update_qn_(s_id, a, s_vs[ag_id])
+        if depth_ > 5 and self.debug:
+            self.debug = False
+            #raise Exception("sdfa")
 
-    def get_agent_decision_fn(self, memory_: NNMemory, ag_id: int):
-        def decision(s, render=False):
+    def get_agent_decision_fn(self, memory_: FlatMemory, ag_id: int):
+        def decision(s: State, render=False):
             for _ in range(self.n_mcts):
                 self.search_(memory_, s, ag_id)
             if render:
@@ -72,18 +83,27 @@ class Mcts:
                 torch.set_printoptions(precision=3)
                 print("P: ", memory_.get_p(s, ag_id))
                 print("V: ", memory_.get_v(s, ag_id))
-            return self.agents[ag_id].find_action(s, render)
+
+            avail_a = self.env.state_utils.get_actions(s, ag_id)
+            sb = self.env.state_utils.hash(s, ag_id)
+            assert sb in self.state_ids_
+            s_id = self.state_ids_[sb]
+            policy = self.agents[ag_id].find_policy(s_id, avail_a, render=render)
+            action = np.argmax(policy)
+            return action
 
         return decision
 
-    def self_play(self, memory_: NNMemory) -> Tuple[np.ndarray,
-                                                    np.ndarray,
-                                                    np.ndarray,
-                                                    np.ndarray]:
+    def self_play(self, memory_: FlatMemory, seed: int = 0) -> Tuple[np.ndarray,
+                                                                     np.ndarray,
+                                                                     np.ndarray,
+                                                                     np.ndarray]:
+        self.debug = False
+        random_gen = np.random.Generator(np.random.PCG64(seed))
         ag_ids = []
         states = []
         policies = []
-        s_ = self.env.init_state
+        s_ = self.env.init_state()
         curr_agent_ = self.agents[0]
         total_rewards = np.zeros(len(self.agents))
         done_ = False
@@ -92,13 +112,18 @@ class Mcts:
             for _ in range(self.n_mcts):
                 self.search_(memory_, s_, curr_agent_.ag_id)
 
-            policy = curr_agent_.find_policy(s_)
-            action = np.random.choice(len(policy), p=policy)
+            avail_a = self.env.state_utils.get_actions(s_, curr_agent_.ag_id)
+            sb = self.env.state_utils.hash(s_, curr_agent_.ag_id)
+            assert sb in self.state_ids_
+            s_id = self.state_ids_[sb]
+
+            policy = curr_agent_.find_policy(s_id, avail_a)
+            action = random_gen.choice(len(policy), p=policy)
             env_output = self.env.model(s_, action, curr_agent_.ag_id, render=False)
             total_rewards += env_output.rewards
 
-            if self.env.get_symmetries is not None:
-                _states, _policies = self.env.get_symmetries(s_, policy)
+            if self.env.state_utils.get_symmetries is not None:
+                _states, _policies = self.env.state_utils.get_symmetries(s_, policy)
                 states += _states
                 policies += _policies
                 ag_ids += len(_states) * [curr_agent_.ag_id]
@@ -111,6 +136,7 @@ class Mcts:
             s_ = env_output.next_state
             depth_ += 1
             done_ = env_output.done
+        print(total_rewards)
         return (np.stack(ag_ids, axis=0)[:, np.newaxis],
                 np.stack(states, axis=0),
                 np.stack(policies, axis=0),
