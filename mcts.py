@@ -129,7 +129,7 @@ class Mcts:
             s_ = env_output.next_state
             depth_ += 1
             done_ = env_output.done
-        print(total_rewards)
+        # print(total_rewards)
         return (np.stack(ag_ids, axis=0)[:, np.newaxis],
                 np.stack(states, axis=0),
                 np.stack(policies, axis=0),
