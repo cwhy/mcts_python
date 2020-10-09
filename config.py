@@ -6,6 +6,7 @@ from typing_extensions import Protocol
 Action = int
 StateID = int
 Actions = np.ndarray
+Rewards = np.ndarray
 
 State = TypeVar('State')
 
@@ -31,10 +32,6 @@ class Env(NamedTuple, Generic[State]):
         def __call__(self, s: State, render: bool) -> Action:
             pass
 
-    class Agent(Protocol):
-        def find_action(self, s: State, render: bool) -> Action:
-            pass
-
     class EnvModel(Protocol):
         def __call__(self, s: State, a: Action, player: int,
                      render: bool) -> 'EnvOutput[State]':
@@ -43,22 +40,24 @@ class Env(NamedTuple, Generic[State]):
     name: str
     n_agents: int
     n_actions: int
-    init_state: Callable[[], State]
+    init_state: Callable[[], Tuple[State, int]]
     model: EnvModel
     state_utils: StateUtils
 
     agent_symbols: Optional[List[str]] = None
-    cli_agent: Optional[Type[Agent]] = None
+    cli_agent: Optional[Callable[[int], Actor]] = None
+    cycle_reward: Optional[Rewards] = None
+    timeout_reward: Optional[Rewards] = None
 
 
 ## Environment
-env_name = 'WuZiQi'
+env_name = 'Connect4'
 player_symbols = ['*', 'o']
 h = 10
 
 ## MCTS setting
 n_iters = 1
-n_eps = 256
+n_eps = 32
 n_mcts = 256
 max_depth = 100
 
@@ -73,4 +72,4 @@ lr = 0.01
 exp_name = f'{env_name}_{h}_n_mcts_{n_mcts}_net1'
 train_from_last = True
 device = 'cpu'
-n_pools = 60
+n_pools = 8

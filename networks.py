@@ -13,10 +13,10 @@ from config import lr, max_batch_size
 def state_process(device: str, env_name: str):
     from_np = lambda x: torch.tensor(x).to(device)
     if env_name == 'TicTacToe':
-        return lambda s: torch.cat(tensors=(from_np(s.array),
+        return lambda s: torch.cat(tensors=(from_np(s.get_array),
                                             from_np((s.turn,))), dim=-1)
     else:
-        return lambda s: from_np(s.array)
+        return lambda s: from_np(s.get_array)
 
 
 class BasicBoardNet(nn.Module):

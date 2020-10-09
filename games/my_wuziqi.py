@@ -3,16 +3,22 @@ from typing import Hashable
 from dataclasses import dataclass, replace
 from config import h, State, Action, player_symbols, Env, device, \
     EnvOutput
-from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, render_, \
-    get_actions, get_symmetries, CliAgent, move_along_in_dirs, check_bound
+from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, \
+    get_actions, move_along_in_dirs, GridBoard
 from networks import BasicBoardNet
 
 env_name = "WuZiQi"
+board = GridBoard(h, h)
+render_ = board.render_
 
 
 @dataclass
 class StateWZQ:
     array: np.ndarray
+
+    @property
+    def get_array(self) -> np.ndarray:
+        return self.array
 
 
 def _hash(state: StateWZQ, agent_id: int) -> Hashable:
@@ -35,7 +41,7 @@ def check_win(s_array: np.ndarray, action: Action) -> bool:
         pos = action_idx
         while True:
             pos = move_fn(*pos)
-            if not check_bound(pos):
+            if not board.check_bound(pos):
                 break
             else:
                 if grid[pos]:
@@ -82,14 +88,14 @@ wuziqi_env = Env(
     name=env_name,
     n_agents=n_players,
     n_actions=n_actions,
-    init_state=lambda: init_state,
+    init_state=lambda: (init_state, 0),
     model=model,
     state_utils=Env.StateUtils(
         hash=_hash,
         get_actions=get_actions,
-        get_symmetries=lambda s, a: get_symmetries(s, a, wrapper=StateWZQ),
+        get_symmetries=lambda s, a: board.get_symmetries_4(s, a, wrapper=StateWZQ),
         render_=render_
     ),
     agent_symbols=player_symbols,
-    cli_agent=CliAgent,
+    cli_agent=board.get_actor,
 )

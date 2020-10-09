@@ -44,5 +44,5 @@
 	* [Thompson Sampling](https://github.com/leela-zero/leela-zero/issues/860)
 
 ### Requirement
-* Python 3.7 +
+* Python 3.8 +
 * Refer to `requirement.txt`

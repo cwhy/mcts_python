@@ -5,12 +5,12 @@ from tqdm import tqdm
 from env_utils import pit, RandomAgent
 from mcts import Mcts
 from memory_utils import NNMemoryAnyState
-from games import envs, nets, cli_agents
+from games import envs, nets
 from glob import glob
-import ray
 
-
-ray.init()
+if n_pools > 0:
+    import ray
+    ray.init(num_cpus=n_pools)
 
 env = envs[env_name]
 neural_net_ = nets[env_name]
@@ -27,7 +27,7 @@ if train_from_last:
         iters_ = 0
 else:
     iters_ = 0
-CliAgent = cli_agents[env_name]
+CliAgent = env.cli_agent
 print("Learning...")
 
 for _ in tqdm(range(n_iters)):
@@ -35,18 +35,15 @@ for _ in tqdm(range(n_iters)):
     memory_ = NNMemoryAnyState(neural_net_, env)
     mcts = Mcts(n_mcts, env, max_depth=100)
 
-
-    @ray.remote
-    def do_episode_(i):
-        return mcts.self_play(memory_, i)
-
-
     if n_pools > 0:
-        # p = Pool(16)
-        # exps = p.map(do_episode_, range(n_eps))
+        @ray.remote
+        def do_episode_(i):
+            return mcts.self_play(memory_, i)
+
+
         exps = ray.get([do_episode_.remote(i) for i in range(n_eps)])
     else:
-        exps = [do_episode(i) for i in range(n_eps)]
+        exps = [mcts.self_play(memory_, i) for i in range(n_eps)]
     exps_arrays = [np.concatenate([ex[i] for ex in exps], axis=0) for i in range(4)]
     neural_net_.train_(*exps_arrays)
 
@@ -71,7 +68,7 @@ while True:
     print("Testing Against Cli/Human...")
     print(f"as {env.agent_symbols[0]}")
     mcts_agent0 = Mcts(n_mcts, env).get_agent_decision_fn(memory_, 0)
-    pit(env, [mcts_agent0, CliAgent(1).find_action], render=True)
+    pit(env, [mcts_agent0, CliAgent(1)], render=True)
     mcts_agent1 = Mcts(n_mcts, env).get_agent_decision_fn(memory_, 1)
     print(f"as {env.agent_symbols[1]}")
-    pit(env, [CliAgent(0).find_action, mcts_agent1], render=True)
+    pit(env, [CliAgent(0), mcts_agent1], render=True)

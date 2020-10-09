@@ -9,8 +9,9 @@ T = TypeVar('T')
 
 
 class FlatMemory:
-    def __init__(self, n_actions: int):
-        self.n_actions = n_actions
+    def __init__(self, env: Env):
+        self.env = env
+        self.n_actions = env.n_actions
         pass
 
     def add_(self, _, __, ___):
@@ -35,7 +36,7 @@ class FlatMemory:
 
 class NNMemoryAnyState(FlatMemory):
     def __init__(self, model: nn.Module, env: Env):
-        super().__init__(env.n_actions)
+        super().__init__(env)
         self.model = model.to(torch.float)
         self.ps_: Dict[Hashable, np.ndarray] = {}
         self.vs_: Dict[Hashable, np.ndarray] = {}

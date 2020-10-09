@@ -1,19 +1,25 @@
 import numpy as np
-from typing import Hashable
+from typing import Hashable, Final
 from dataclasses import dataclass, replace
 from config import h, State, Action, player_symbols, Env, device, \
     EnvOutput
-from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, render_, \
-    get_actions, get_symmetries, CliAgent
+from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, \
+    get_actions, GridBoard
 from networks import BasicBoardNet
 
 env_name = "TicTacToe"
+board = GridBoard(h, h)
+render_ = board.render_
 
 
 @dataclass
 class StateTTT:
     array: np.ndarray
     turn: int
+
+    @property
+    def get_array(self) -> np.ndarray:
+        return self.array
 
 
 def _hash(state: StateTTT, agent_id: int) -> Hashable:
@@ -87,15 +93,15 @@ ttt_env = Env(
     name=env_name,
     n_agents=n_players,
     n_actions=n_actions,
-    init_state=lambda: init_state,
+    init_state=lambda: (init_state, 0),
     model=model,
     state_utils=Env.StateUtils(
         hash=_hash,
         get_actions=get_actions,
-        get_symmetries=lambda s, a: get_symmetries(s, a,
-                                                   wrapper=lambda na: replace(s, array=na)),
+        get_symmetries=lambda s, a: board.get_symmetries_4(s, a,
+                                                           wrapper=lambda na: replace(s, array=na)),
         render_=render_
     ),
     agent_symbols=player_symbols,
-    cli_agent=CliAgent,
+    cli_agent=board.get_actor,
 )

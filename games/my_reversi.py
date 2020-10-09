@@ -3,16 +3,22 @@ import numpy as np
 from typing import Hashable
 from config import h, State, Action, player_symbols, Env, device, \
     EnvOutput
-from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, render_, \
-    get_actions, get_symmetries, CliAgent, check_bound, move_along_in_dirs, pos_to_arr_idx
+from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, \
+    get_actions, move_along_in_dirs, GridBoard
 from networks import BasicBoardNet
 
 env_name = "Reversi"
+board = GridBoard(h, h)
+render_ = board.render_
 
 
 @dataclass
 class StateReversi:
     array: np.ndarray
+
+    @property
+    def get_array(self) -> np.ndarray:
+        return self.array
 
 
 def _hash(state: StateReversi, agent_id: int) -> Hashable:
@@ -36,7 +42,7 @@ def update_array_(s_array: np.ndarray, action: Action, player: int):
         pos = action_idx
         while True:
             pos = move_fn(*pos)
-            if not check_bound(pos):
+            if not board.check_bound(pos):
                 break
             else:
                 if grid[pos] == player:
@@ -44,7 +50,7 @@ def update_array_(s_array: np.ndarray, action: Action, player: int):
                     break
                 elif grid[pos] != -1:
                     pending.append(pos)
-    s_array[[pos_to_arr_idx(i) for i in to_eat]] = player
+    s_array[[board.pos_to_arr_idx(i) for i in to_eat]] = player
     s_array[action] = player
 
 
@@ -85,14 +91,14 @@ reversi_env = Env(
     name=env_name,
     n_agents=n_players,
     n_actions=n_actions,
-    init_state=lambda: init_state,
+    init_state=lambda: (init_state, 0),
     model=model,
     state_utils=Env.StateUtils(
         hash=_hash,
         get_actions=get_actions,
-        get_symmetries=lambda s, a: get_symmetries(s, a, wrapper=StateReversi),
+        get_symmetries=lambda s, a: board.get_symmetries_4(s, a, wrapper=StateReversi),
         render_=render_
     ),
     agent_symbols=player_symbols,
-    cli_agent=CliAgent,
+    cli_agent=board.get_actor,
 )

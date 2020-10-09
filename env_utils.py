@@ -4,8 +4,7 @@ from config import Env, State
 
 
 def pit(env: Env, actors: List[Env.Actor], render: bool = False):
-    s = env.init_state()
-    ag_id = 0
+    s, ag_id = env.init_state()
     current_actor_ = actors[ag_id]
     done = False
     env_output = action = None

@@ -35,8 +35,16 @@ class Mcts:
         done_ = False
         depth_ = 0
         s_vs = np.zeros(n_agents)
+        current_states_ = set()
         while not (done_ or (self.max_depth is not None and depth_ > self.max_depth)):
             sb = self.env.state_utils.hash(s_, curr_agent_.ag_id)
+            if sb not in current_states_:
+                current_states_.add(sb)
+            else:
+                # prevent cycle
+                if self.env.cycle_reward is not None:
+                    s_vs += self.env.cycle_reward
+                break
             if sb not in self.state_ids_:
                 self.states_.append(s_)
                 self.state_ids_[sb] = len(self.states_) - 1
@@ -96,8 +104,8 @@ class Mcts:
         ag_ids = []
         states = []
         policies = []
-        s_ = self.env.init_state()
-        curr_agent_ = self.agents[0]
+        s_, ag_id_init = self.env.init_state()
+        curr_agent_ = self.agents[ag_id_init]
         total_rewards = np.zeros(len(self.agents))
         done_ = False
         depth_ = 0

@@ -4,9 +4,8 @@ from dataclasses import replace, dataclass
 import numpy as np
 
 from config import h, Action, player_symbols, Env, device, EnvOutput, Actions
-from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, render_, \
-    get_symmetries, print_grid_line_
-from games.my_wuziqi import n_players, check_win, n_actions
+from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual
+from games.my_wuziqi import n_players, check_win, n_actions, render_, board
 from networks import BasicBoardNet
 
 
@@ -14,6 +13,10 @@ from networks import BasicBoardNet
 class StateWZQ1Swap:
     array: np.ndarray
     swapped: int
+
+    @property
+    def get_array(self) -> np.ndarray:
+        return self.array
 
 
 env_name = "WuZiQi_1Swap"
@@ -77,41 +80,42 @@ def model(s: StateWZQ1Swap, a: Action, player: int,
     return EnvOutput(s_new, rewards, done, next_player, message)
 
 
-class CliAgent:
-    def __init__(self, agent_id: int):
-        self.ag_id = agent_id
+class WZQ1SwapCliAgent:
+    def __init__(self, _h: int, _w: int):
+        self.h = _h
+        self.w = _w
 
-    # noinspection PyMethodMayBeStatic
-    def find_action(self, s: StateWZQ1Swap, render: bool = False) -> Action:
-        print("Current Game State:")
-        render_(s)
-        if s.swapped == 0 and sum(s.array != -1) == 1:
-            print("Do you want to swap?")
-            i = int(input("0 -> No, 1 -> Yes: "))
-        else:
-            print("Position numbers:")
-            for i in range(0, h ** 2, h):
-                print_grid_line_(np.arange(0, h ** 2), i)
+    def get_actor(self, ag_id: int):
+        def _actor(s: StateWZQ1Swap, render: bool = False) -> Action:
+            print("Current Game State:")
+            render_(s)
+            if s.swapped == 0 and sum(s.array != -1) == 1:
+                print("Do you want to swap?")
+                i = int(input("0 -> No, 1 -> Yes: "))
+            else:
+                print("Position numbers:")
+                board.print_grid_(np.arange(0, self.w * self.h).reshape(self.h, self.w),
+                                  to_str=lambda x: str(x).rjust(2))
+                msg = f"Enter your next move as position number (as {player_symbols[ag_id]}):"
+                i = int(input(msg))
+            return i
 
-            print(" " + "-" * (h * 4 + 1))
-            msg = f"Enter your next move as position number (as {player_symbols[self.ag_id]}):"
-            i = int(input(msg))
-        return i
+        return _actor
 
 
 wuziqi_env = Env(
     name=env_name,
     n_agents=n_players,
     n_actions=n_actions,
-    init_state=lambda: init_state,
+    init_state=lambda: (init_state, 0),
     model=model,
     state_utils=Env.StateUtils(
         hash=_hash,
         get_actions=get_actions,
-        get_symmetries=lambda s, a: get_symmetries(s, a,
-                                                   wrapper=lambda na: replace(s, array=na)),
+        get_symmetries=lambda s, a: board.get_symmetries(s, a,
+                                                         wrapper=lambda na: replace(s, array=na)),
         render_=render_
     ),
     agent_symbols=player_symbols,
-    cli_agent=CliAgent,
+    cli_agent=WZQ1SwapCliAgent(h, h).get_actor,
 )
