@@ -5,6 +5,7 @@ from config import h, State, Action, player_symbols, Env, device, \
     EnvOutput
 from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, \
     get_actions, move_along_in_dirs, GridBoard
+from games.web_agent import WebAgent
 from networks import BasicBoardNet
 
 env_name = "Reversi"
@@ -26,7 +27,14 @@ def _hash(state: StateReversi, agent_id: int) -> Hashable:
 
 
 # bad: -2, empty: -1, players: 0, 1, 2...
-init_state: State = StateReversi(np.full(h ** 2, -1))
+assert h % 2 == 0
+init_grid = np.full((h, h), -1)
+init_grid[h // 2, h // 2] = 0
+init_grid[h // 2 - 1, h // 2] = 1
+init_grid[h // 2, h // 2 - 1] = 1
+init_grid[h // 2 - 1, h // 2 - 1] = 0
+
+init_state: State = StateReversi(init_grid.ravel())
 n_actions = h ** 2
 n_players = len(player_symbols)
 
@@ -48,7 +56,9 @@ def update_array_(s_array: np.ndarray, action: Action, player: int):
                 if grid[pos] == player:
                     to_eat += pending
                     break
-                elif grid[pos] != -1:
+                elif grid[pos] == -1:
+                    break
+                else:
                     pending.append(pos)
     s_array[[board.pos_to_arr_idx(i) for i in to_eat]] = player
     s_array[action] = player
@@ -101,4 +111,5 @@ reversi_env = Env(
     ),
     agent_symbols=player_symbols,
     cli_agent=board.get_actor,
+    web_agent=WebAgent(h, h).get_actor,
 )

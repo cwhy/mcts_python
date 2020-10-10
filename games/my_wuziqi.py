@@ -5,6 +5,7 @@ from config import h, State, Action, player_symbols, Env, device, \
     EnvOutput
 from games.gridboard_utils import rewards_all, rewards_winner_take_all, rewards_individual, \
     get_actions, move_along_in_dirs, GridBoard
+from games.web_agent import WebAgent
 from networks import BasicBoardNet
 
 env_name = "WuZiQi"
@@ -98,4 +99,5 @@ wuziqi_env = Env(
     ),
     agent_symbols=player_symbols,
     cli_agent=board.get_actor,
+    web_agent=WebAgent(h, h).get_actor
 )

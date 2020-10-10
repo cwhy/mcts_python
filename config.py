@@ -46,17 +46,18 @@ class Env(NamedTuple, Generic[State]):
 
     agent_symbols: Optional[List[str]] = None
     cli_agent: Optional[Callable[[int], Actor]] = None
+    web_agent: Optional[Callable[[int], Actor]] = None
     cycle_reward: Optional[Rewards] = None
     timeout_reward: Optional[Rewards] = None
 
 
 ## Environment
-env_name = 'Connect4'
+env_name = 'Reversi'
 player_symbols = ['*', 'o']
-h = 10
+h = 8
 
 ## MCTS setting
-n_iters = 1
+n_iters = 0
 n_eps = 32
 n_mcts = 256
 max_depth = 100
